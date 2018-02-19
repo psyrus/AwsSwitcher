@@ -5,8 +5,23 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AwsSwitcher"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
+        Title="AWS Switcher" Height="350" Width="525">
     <Grid>
-        
+        <DataGrid Name="Instances" ItemsSource="{Binding}" AutoGenerateColumns="False" >
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Instance ID"  Binding="{Binding InstanceId}"/>
+                <DataGridTextColumn Header="Instance Type" Binding="{Binding InstanceType}" />
+                <DataGridTextColumn Header="Instance State" Binding="{Binding State.Name}" />
+                <DataGridTextColumn Header="Public IP" Binding="{Binding PublicIpAddress}" />
+                <DataGridTextColumn Header="Launched"  Binding="{Binding LaunchTime, StringFormat=\{0:yyyy/MM/dd HH:mm:ss\}}" />
+                <DataGridTemplateColumn Header="Action">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Name="toggleButton" Click="ToggleInstanceState" Content="Toggle State" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
     </Grid>
 </Window>
