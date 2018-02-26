@@ -84,7 +84,7 @@ namespace AwsSwitcher
                 var index = 0;
                 foreach (var reservation in response.Reservations)
                 {
-                    Instances.DataContext = reservation.Instances;
+                    Instances.ItemsSource = reservation.Instances;
                     foreach (var i in reservation.Instances)
                     {
                         if (i.InstanceId != instanceID)
@@ -97,10 +97,18 @@ namespace AwsSwitcher
                         }
                         Console.WriteLine(i.PublicIpAddress);
                         //Somehow get each row's button reference, then change the text appropriately
+                        var item = this.Instances.Items[index];
+                        var column = this.Instances.Columns[5];
+                        var cellToEdit = new DataGridCellInfo(item, column);
+
+                        this.Instances.CurrentCell = cellToEdit;
+                        Console.WriteLine(cellToEdit);
                     }
                     index++;
                 }
             }
+            
+            
             if (!anyChangingState)
             {
                 dispatcherTimer.Stop();
