@@ -22,8 +22,8 @@
             </DataGrid>
             <Rectangle Fill="#FFF4F4F5" Height="2" Stroke="Gray" Margin="5,10"/>
             <StackPanel Orientation="Horizontal" Width="525">
-                <Button IsEnabled="False" x:Name="InstanceButton" Click="InstanceButton_Click" Content="Add/Change Instance Data" Margin="50,5" Height="25"/>
-                <Button IsEnabled="False" x:Name="VpnButton" Click="VpnButton_Click" Content="Link Ovpn Config File" Margin="50,5"/>
+                <Button IsEnabled="True" x:Name="InstanceButton" Click="InstanceButton_Click" Content="Add/Change Instance Data" Margin="50,5" Height="25"/>
+                <Button IsEnabled="True" x:Name="VpnButton" Click="VpnButton_Click" Content="Link Ovpn Config File" Margin="50,5"/>
             </StackPanel>
         </StackPanel>
 

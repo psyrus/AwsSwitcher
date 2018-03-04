@@ -1,0 +1,21 @@
+﻿<Window x:Class="AwsSwitcher.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AwsSwitcher"
+        mc:Ignorable="d"
+        Title="Settings" Height="300" Width="250" ShowInTaskbar="False" SizeToContent="WidthAndHeight">
+    <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Width="200">
+        <Label Content="Access ID"/>
+        <TextBox x:Name="access_id" Height="23" TextWrapping="Wrap" Text="" Margin="0, 0, 0, 0" FontSize="10"/>
+        <Label Content="Access Key"/>
+        <TextBox x:Name="access_key" Height="23" TextWrapping="Wrap" Text="" Margin="0, 0, 0, 0" FontSize="10"/>
+        <Label Content="Instance ID"/>
+        <TextBox x:Name="instance_id" Height="23" TextWrapping="Wrap" Text="" Margin="0, 0, 0, 0" FontSize="10"/>
+        <Label Content="VPN Config File Path"/>
+        <TextBox x:Name="vpn_config" Height="23" TextWrapping="Wrap" Text="" Margin="0, 0, 0, 0" FontSize="10"/>
+        <Button Content="Save Settings" x:Name="SaveButton" Margin="0, 10, 0, 0" Click="SaveButton_Click"/>
+    </StackPanel>
+
+</Window>
