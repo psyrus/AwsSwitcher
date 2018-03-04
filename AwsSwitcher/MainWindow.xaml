@@ -5,23 +5,27 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AwsSwitcher"
         mc:Ignorable="d"
-        Title="AWS Switcher" Height="350" Width="525">
+        Title="AWS Switcher" Height="350" Width="600">
     <Grid>
-        <DataGrid Name="Instances" ItemsSource="{Binding}" AutoGenerateColumns="False" >
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Instance ID"  Binding="{Binding InstanceId}"/>
-                <DataGridTextColumn Header="Instance Type" Binding="{Binding InstanceType}" />
-                <DataGridTextColumn Header="Instance State" Binding="{Binding State.Name}" />
-                <DataGridTextColumn Header="Public IP" Binding="{Binding PublicIpAddress}" />
-                <DataGridTextColumn Header="Launched"  Binding="{Binding LaunchTime, StringFormat=\{0:yyyy/MM/dd HH:mm:ss\}}" />
-                <DataGridTemplateColumn Header="Action">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Button Name="toggleButton" Click="ToggleInstanceState" Content="Toggle State" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center" Orientation="Vertical" Width="600" Height="300">
+            <Button x:Name="ActionButton" Click="ToggleInstanceState" IsEnabled="False" Content="Please wait..." VerticalAlignment="Bottom" HorizontalAlignment="Center" Width="200" Height="100" Margin="5,10"/>
+            <Rectangle Fill="#FFF4F4F5" Height="2" Stroke="Gray" Margin="5,10"/>
+            <DataGrid Name="Instances" ItemsSource="{Binding}" AutoGenerateColumns="False" HorizontalAlignment="Center" Width="600">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Name"  Binding="{Binding Tags[0].Value}"/>
+                    <DataGridTextColumn Header="Instance ID"  Binding="{Binding InstanceId}"/>
+                    <DataGridTextColumn Header="Instance Type" Binding="{Binding InstanceType}" />
+                    <DataGridTextColumn Header="State" Binding="{Binding State.Name}" />
+                    <DataGridTextColumn Header="Public IP" Binding="{Binding PublicIpAddress}" />
+                    <DataGridTextColumn Header="Launched"  Binding="{Binding LaunchTime, StringFormat=\{0:yyyy/MM/dd HH:mm:ss\}}"  Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+            <Rectangle Fill="#FFF4F4F5" Height="2" Stroke="Gray" Margin="5,10"/>
+            <StackPanel Orientation="Horizontal" Width="525">
+                <Button IsEnabled="True" x:Name="InstanceButton" Click="InstanceButton_Click" Content="Add/Change Instance Data" Margin="50,5" Height="25"/>
+                <Button IsEnabled="True" x:Name="VpnButton" Click="VpnButton_Click" Content="Link Ovpn Config File" Margin="50,5"/>
+            </StackPanel>
+        </StackPanel>
+
     </Grid>
 </Window>

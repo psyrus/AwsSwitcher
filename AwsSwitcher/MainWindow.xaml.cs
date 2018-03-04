@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using System.Linq;
+using Amazon.EC2.Model;
+using System.IO;
+using Microsoft.Win32;
 
 namespace AwsSwitcher
 {
@@ -18,130 +21,61 @@ namespace AwsSwitcher
     /// </summary>
     public partial class MainWindow : Window
     {
+        public string CONFIG_FILE = "aws_config.xml";
         private DispatcherTimer dispatcherTimer = new DispatcherTimer();
         private List<Task> runningTasks = new List<Task>();
+        private Dictionary<string, string> settings;
+        private Amazon.EC2.Model.Instance targetInstance;
+
         public MainWindow()
         {
             InitializeComponent();
+            settings = GetSettings(CONFIG_FILE);
 
             UpdateUI();
 
             dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
-            dispatcherTimer.Interval = new TimeSpan(0, 0, 10);
+            dispatcherTimer.Interval = new TimeSpan(0, 0, 5);
             dispatcherTimer.Start();
-        }
-        void ShowHideDetails(object sender, RoutedEventArgs e)
-        {
-            for (var vis = sender as Visual; vis != null; vis = VisualTreeHelper.GetParent(vis) as Visual)
-                if (vis is DataGridRow)
-                {
-                    var row = (DataGridRow)vis;
-                    row.DetailsVisibility =
-                    row.DetailsVisibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-                    break;
-                }
+
+            //settings["testKey"] = "testVal";
+            //SaveSettings(CONFIG_FILE, settings);
         }
 
-        void ToggleInstanceState(object sender, RoutedEventArgs e)
-        {
-            Console.WriteLine(sender);
-            Amazon.EC2.Model.Instance x = (Amazon.EC2.Model.Instance)((Button)sender).DataContext;
-            Console.WriteLine(x.PrivateIpAddress);
-
-            using (var awsClient = GetClient())
-            { 
-                if (x.State.Code > 64)
-                {
-                    Amazon.EC2.Model.StartInstancesRequest req = new Amazon.EC2.Model.StartInstancesRequest();
-                    req.InstanceIds.Add(x.InstanceId);
-                    var y = awsClient.StartInstances(req);
-                }
-                else
-                {
-                    Amazon.EC2.Model.StopInstancesRequest req = new Amazon.EC2.Model.StopInstancesRequest();
-                    req.InstanceIds.Add(x.InstanceId);
-                    var y = awsClient.StopInstances(req);
-                }
-                //Amazon.EC2.Model.StartInstancesRequest req = new Amazon.EC2.Model.StartInstancesRequest();
-                //req.InstanceIds.Add(instanceID);
-                //var x = client.StartInstances(req);
-            }
-            UpdateUI();
-        }
-
-        /// <summary>
-        /// This function will update the UI periodically to check if a button needs to be changed
-        /// </summary>
         void UpdateUI()
         {
-            string instanceID = "i-09fb8f217e449cf50";
-
-            bool anyChangingState = false;
+            dispatcherTimer.Start();
+            bool isChangingState = false;
             Regex searchRegex = new Regex(@"^remote ((?:\d+\.?)+) (\d+)", RegexOptions.Multiline);
             using (var awsClient = GetClient())
             {
-                var response = awsClient.DescribeInstances();
-                var index = 0;
-                foreach (var reservation in response.Reservations)
+                var req = new Amazon.EC2.Model.DescribeInstancesRequest();
+                req.InstanceIds.Add(settings["instance_id"]);
+                var response = awsClient.DescribeInstances(req);
+                targetInstance = response.Reservations[0].Instances[0];
+                Instances.ItemsSource = new Amazon.EC2.Model.Instance[] { targetInstance };
+                if ((new int[] { 0, 32, 64 }).Contains(targetInstance.State.Code))
                 {
-                    Instances.ItemsSource = reservation.Instances;
-                    foreach (var i in reservation.Instances)
-                    {
-                        if (i.InstanceId != instanceID)
-                        {
-                            continue;
-                        }
-                        if ((new int[] { 0, 32, 64 }).Contains(i.State.Code))
-                        {
-                            anyChangingState = true;
-                        }
-                        Console.WriteLine(i.PublicIpAddress);
-                        //Somehow get each row's button reference, then change the text appropriately
-                        var item = this.Instances.Items[index];
-                        var column = this.Instances.Columns[5];
-                        var cellToEdit = new DataGridCellInfo(item, column);
-
-                        this.Instances.CurrentCell = cellToEdit;
-                        Console.WriteLine(cellToEdit);
-                    }
-                    index++;
+                    ActionButton.IsEnabled = false;
+                    isChangingState = true;
                 }
             }
-            
-            
-            if (!anyChangingState)
+
+            if (!isChangingState)
             {
                 dispatcherTimer.Stop();
+                ActionButton.IsEnabled = true;
+                ActionButton.Content = GetInstanceAction(targetInstance);
+                ConfigureVPN(targetInstance);
             }
         }
 
+        #region Settings and helpers
         AmazonEC2Client GetClient()
         {
-            var settings = GetSettings("aws_config.xml");
             RegionEndpoint region = RegionEndpoint.APSoutheast2;
 
             return new AmazonEC2Client(settings["access_id"], settings["access_key"], region);
-        }
-
-        private void dispatcherTimer_Tick(object sender, EventArgs e)
-        {
-
-            UpdateUI();
-            return;
-            //Check all current tasks to make sure all are complete.
-            for (int i = 0; i < runningTasks.Count; i++)
-            {
-                Task item = runningTasks[i];
-                if (item.IsCompleted)
-                {
-                    runningTasks.Remove(item);
-                }
-                else
-                {
-                    //One of the tasks has not yet finished, thus we should skip this update round.
-                    return;
-                }
-            }
         }
 
         public Dictionary<string, string> GetSettings(string path)
@@ -158,6 +92,84 @@ namespace AwsSwitcher
             return results;
 
         }
+
+        public void SaveSettings(string path, Dictionary<string, string> settingsToSave)
+        {
+
+            XElement el = new XElement("root",
+                settingsToSave.Select(kv => new XElement(kv.Key, kv.Value)));
+
+            el.Save(path);
+        }
+
+        private object GetInstanceAction(Instance targetInstance)
+        {
+            return targetInstance.State.Code > 64 ? "Start instance" : "Shut down instance";
+        }
+
+        private void ConfigureVPN(Instance targetInstance)
+        {
+            string text = File.ReadAllText(settings["vpn_config"]);
+            text = Regex.Replace(text, @"^remote ((?:\d*\.?)+) 1194", String.Format("remote {0} 1194", targetInstance.PublicIpAddress ?? "0.0.0.0"), RegexOptions.Multiline);
+            File.WriteAllText(settings["vpn_config"], text);
+        }
+
+        #endregion
+
+        #region Event Handlers
+
+        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        {
+            UpdateUI();
+        }
+
+        void ToggleInstanceState(object sender, RoutedEventArgs e)
+        {
+            if (this.targetInstance == null)
+            {
+                Console.WriteLine("Error: Instance does not exist");
+                return;
+            }
+            ActionButton.Content = "Please wait...";
+
+            using (var awsClient = GetClient())
+            {
+                if (targetInstance.State.Code > 64)
+                {
+                    StartInstancesRequest req = new Amazon.EC2.Model.StartInstancesRequest();
+                    req.InstanceIds.Add(targetInstance.InstanceId);
+                    awsClient.StartInstances(req);
+                }
+                else
+                {
+                    StopInstancesRequest req = new Amazon.EC2.Model.StopInstancesRequest();
+                    req.InstanceIds.Add(targetInstance.InstanceId);
+                    awsClient.StopInstances(req);
+                }
+            }
+            UpdateUI();
+        }
+
+        private void InstanceButton_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsWindow sw = new SettingsWindow();
+            sw.PopulateSettings(settings);
+            sw.Show();
+
+        }
+
+        private void VpnButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofg = new OpenFileDialog();
+            if (ofg.ShowDialog() == true)
+            {
+                settings["vpn_config"] = ofg.FileName;
+                Console.WriteLine(settings["vpn_config"]);
+            }
+
+        }
+        #endregion
+
     }
 
 }
