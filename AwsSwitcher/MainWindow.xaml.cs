@@ -13,6 +13,7 @@ using System.Linq;
 using Amazon.EC2.Model;
 using System.IO;
 using Microsoft.Win32;
+using System.Diagnostics;
 
 namespace AwsSwitcher
 {
@@ -112,6 +113,27 @@ namespace AwsSwitcher
             string text = File.ReadAllText(settings["vpn_config"]);
             text = Regex.Replace(text, @"^remote ((?:\d*\.?)+) 1194", String.Format("remote {0} 1194", targetInstance.PublicIpAddress ?? "0.0.0.0"), RegexOptions.Multiline);
             File.WriteAllText(settings["vpn_config"], text);
+            if (targetInstance.State.Code == 16)
+            {
+                ConnectVPN();
+            }
+        }
+
+        private void ConnectVPN()
+        {
+            /*
+            taskkill.exe /F /IM openvpn.exe
+            taskkill.exe /F /IM openvpn-gui.exe
+            timeout 1
+            start /b "" "C:\Program Files\OpenVPN\bin\openvpn-gui.exe" --connect nas_at_home.ovpn
+             */
+            string procName = "openvpn-gui";
+            foreach (var proc in Process.GetProcessesByName(procName))
+            {
+                proc.Kill();
+            }
+
+            Process.Start(String.Format(@"C:\Program Files\OpenVPN\bin\{0}.exe",procName), String.Format("--connect {0}", "client1.ovpn"));
         }
 
         #endregion
